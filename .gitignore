@@ -1,0 +1,149 @@
+# Unreal Engine 5 .gitignore
+
+# Visual Studio 2022 files
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.opensdf
+*.sdf
+*.sln.docstates
+*.suo
+
+# Unreal Engine Build Files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vscode/
+.vs/
+
+# Unreal Engine Cache and Temporary Files
+*.tmp
+*.log
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Unreal Project Files
+*.VC.db
+*.VC.VC.opendb
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Plugin specific
+*.uplugin.backup
+
+# Crash logs
+crashlytics-build.properties
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# IntelliJ
+.idea/
+*.iml
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# PyDev specific (Python IDE for Eclipse)
+*.pydevproject
+
+# CDT-specific (C/C++ Development Tooling)
+.cproject
+
+# JDT-specific (Eclipse Java Development Tools)
+.classpath
+
+# Java annotation processor (APT)
+.factorypath
+
+# PDT-specific (PHP Development Tools)
+.buildpath
+
+# sbteclipse plugin
+.target
+
+# TeXlipse plugin
+.texlipse
+
+# STS (Spring Tool Suite)
+.springBeans
+
+# Code Recommenders
+.recommenders/
+
+# Annotation Processing
+.apt_generated/
+
+# Scala IDE specific (Scala & Java IDE for Eclipse)
+.cache-main
+.scala_dependencies
+.worksheet
+
+# UE4/UE5 specific
+Binaries/*
+Plugins/*/Binaries/*
+Build/*
+Plugins/*/Intermediate/*
+
+# UE4/UE5 pak files
+*.pak
+
+# UE4/UE5 cooked content
+**/Saved/Cooked/*
+
+# UE4/UE5 autosaves
+*_BuiltData.uasset
+
+# Starter Content (Comment out if you want to include it)
+Content/StarterContent/
+
+# Don't ignore important project files
+!*.uproject
+!*.uplugin
+!Content/**/*.uasset
+!Content/**/*.umap
+!Source/
+!Config/
+
+# Include gitkeep files
+!.gitkeep
