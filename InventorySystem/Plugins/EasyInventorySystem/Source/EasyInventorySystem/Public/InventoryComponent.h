@@ -51,6 +51,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetItemCount(UItem* Item) const;
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	TArray<FInventorySlot> GetInventorySlots();
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

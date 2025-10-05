@@ -19,9 +19,15 @@ class EASYINVENTORYSYSTEM_API IStorableItemInterface
 public:
     // Retorna o DataAsset associado (metadados do item)
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
-    class UItem* GetItemData();
+    class UItem* GetItemData() const;
 
     // Retorna a quantidade (stack, munição, etc.)
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
     int32 GetQuantity();
+
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
+    class UItem* StoreItem();
+
+    UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Inventory")
+    void OnStored();
 };

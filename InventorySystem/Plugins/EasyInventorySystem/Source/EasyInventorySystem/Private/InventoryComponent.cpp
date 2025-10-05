@@ -94,3 +94,8 @@ int32 UInventoryComponent::GetItemCount(UItem* Item) const
     }
     return Count;
 }
+
+TArray<FInventorySlot> UInventoryComponent::GetInventorySlots()
+{
+    return Inventory;
+}

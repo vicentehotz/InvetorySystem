@@ -3,8 +3,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/DataAsset.h"        // ou PrimaryDataAsset.h
+#include "Engine/DataAsset.h"
+#include "StorableItemInterface.h"
 #include "Item.generated.h"
+
+USTRUCT(BlueprintType)
+struct FGridPosition
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Row;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Column;
+
+    FGridPosition()
+        : Row(0), Column(0)
+    {
+    }
+
+    FGridPosition(int32 InRow, int32 InColumn)
+        : Row(InRow), Column(InColumn)
+    {
+    }
+};
 
 /**
  * 
@@ -23,6 +46,12 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     int32 MaxStackSize = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+    FGridPosition GridPosition;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+    TScriptInterface<IStorableItemInterface> StoredItem;
 
     UItem() = default;
 };
