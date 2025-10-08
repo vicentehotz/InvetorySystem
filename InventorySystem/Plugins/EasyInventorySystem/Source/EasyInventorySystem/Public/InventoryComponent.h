@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Item.h"
+#include "ItemData.h"
 #include "InventoryComponent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -13,12 +13,12 @@ struct FInventorySlot
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UItem* Item;
+	UItemData* Item;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Quantity;
 
-	FInventorySlot(UItem* Item, const int32& Quantity)
+	FInventorySlot(UItemData* Item, const int32& Quantity)
 		: Item(Item), Quantity(Quantity)
 	{
 	}
@@ -43,13 +43,13 @@ public:
 	TArray<FInventorySlot> Inventory;
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool AddItem(UItem* Item, int32 Quantity = 1);
+	bool AddItem(UItemData* Item, int32 Quantity = 1);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool RemoveItem(UItem* Item, int32 Quantity = 1);
+	bool RemoveItem(UItemData* Item, int32 Quantity = 1);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	int32 GetItemCount(UItem* Item) const;
+	int32 GetItemCount(UItemData* Item) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	TArray<FInventorySlot> GetInventorySlots();

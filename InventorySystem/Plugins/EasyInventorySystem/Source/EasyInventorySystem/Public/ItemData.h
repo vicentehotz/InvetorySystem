@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "StorableItemInterface.h"
-#include "Item.generated.h"
+#include "ItemData.generated.h"
 
 USTRUCT(BlueprintType)
 struct FGridPosition
@@ -33,7 +33,7 @@ struct FGridPosition
  * 
  */
 UCLASS()
-class EASYINVENTORYSYSTEM_API UItem : public UPrimaryDataAsset
+class EASYINVENTORYSYSTEM_API UItemData : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 	
@@ -53,5 +53,5 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     TScriptInterface<IStorableItemInterface> StoredItem;
 
-    UItem() = default;
+    UItemData() = default;
 };

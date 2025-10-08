@@ -32,7 +32,7 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	// ...
 }
 
-bool UInventoryComponent::AddItem(UItem* Item, int32 Quantity)
+bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
 {
     if (!Item || Quantity <= 0) return false;
 
@@ -60,7 +60,7 @@ bool UInventoryComponent::AddItem(UItem* Item, int32 Quantity)
     return Quantity <= 0;
 }
 
-bool UInventoryComponent::RemoveItem(UItem* Item, int32 Quantity)
+bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
 {
     if (!Item || Quantity <= 0) return false;
 
@@ -84,7 +84,7 @@ bool UInventoryComponent::RemoveItem(UItem* Item, int32 Quantity)
     return Quantity <= 0;
 }
 
-int32 UInventoryComponent::GetItemCount(UItem* Item) const
+int32 UInventoryComponent::GetItemCount(UItemData* Item) const
 {
     int32 Count = 0;
     for (const FInventorySlot& Slot : Inventory)
