@@ -32,8 +32,14 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	// ...
 }
 
+void UInventoryComponent::InitializeInventory(TArray<FInventorySlot> Items)
+{
+    //TODO
+}
+
 bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
 {
+    //TODO Refactor
     if (!Item || Quantity <= 0) return false;
 
     // Verifica se item já existe e pode empilhar
@@ -62,6 +68,7 @@ bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
 
 bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
 {
+    //TODO Refactor
     if (!Item || Quantity <= 0) return false;
 
     for (int32 i = Inventory.Num() - 1; i >= 0; --i)
@@ -84,6 +91,33 @@ bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
     return Quantity <= 0;
 }
 
+void UInventoryComponent::MoveItem(UItemData* Item, FGridPosition NewPosition)
+{
+    FInventorySlot* ItemToBeMoved = Inventory.FindByKey(Item->Id);
+    FInventorySlot* ItemInDesiredPosition = Inventory.FindByKey(NewPosition);
+
+    if (ItemInDesiredPosition)
+    {
+        ItemInDesiredPosition->Position = ItemToBeMoved->Position;
+    }
+
+    ItemToBeMoved->Position = NewPosition;
+}
+
+UItemData* UInventoryComponent::GetItemById(FName ItemId)
+{
+    FInventorySlot* Slot = Inventory.FindByKey(ItemId);
+
+    if (Slot)
+    {
+        return Slot->Item;
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("Item with id %s not found"), *ItemId.ToString());
+
+    return nullptr;
+}
+
 int32 UInventoryComponent::GetItemCount(UItemData* Item) const
 {
     int32 Count = 0;
@@ -95,7 +129,7 @@ int32 UInventoryComponent::GetItemCount(UItemData* Item) const
     return Count;
 }
 
-TArray<FInventorySlot> UInventoryComponent::GetInventorySlots()
+TArray<FInventorySlot> UInventoryComponent::GetInventory()
 {
     return Inventory;
 }

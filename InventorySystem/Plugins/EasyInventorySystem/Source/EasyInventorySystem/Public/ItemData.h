@@ -7,28 +7,6 @@
 #include "StorableItemInterface.h"
 #include "ItemData.generated.h"
 
-USTRUCT(BlueprintType)
-struct FGridPosition
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 Row;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 Column;
-
-    FGridPosition()
-        : Row(0), Column(0)
-    {
-    }
-
-    FGridPosition(int32 InRow, int32 InColumn)
-        : Row(InRow), Column(InColumn)
-    {
-    }
-};
-
 /**
  * 
  */
@@ -39,16 +17,13 @@ class EASYINVENTORYSYSTEM_API UItemData : public UPrimaryDataAsset
 	
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-    FName ItemID;
+    FName Id;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     FText Name;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     int32 MaxStackSize = 1;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-    FGridPosition GridPosition;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
     TScriptInterface<IStorableItemInterface> StoredItem;

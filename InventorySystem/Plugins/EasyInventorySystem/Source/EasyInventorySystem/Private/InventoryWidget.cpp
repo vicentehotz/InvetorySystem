@@ -13,15 +13,15 @@ void UInventoryWidget::InitializeInventory(UInventoryComponent* InventoryComp)
 
 void UInventoryWidget::RefreshInventory()
 {
-    if (!InventoryRef || !GridSlots) return;
+    //if (!InventoryRef || !GridSlots) return;
 
-    GridSlots->ClearChildren();
+    //GridSlots->ClearChildren();
 
-    const auto& Items = InventoryRef->GetInventorySlots();
-    for (int32 i = 0; i < Items.Num(); i++)
-    {
-        // Aqui você criaria widgets de slot (ex: UItemSlotWidget)
-        // e adicionaria no GridSlots
+    //const auto& Items = InventoryRef->GetInventorySlots();
+    //for (int32 i = 0; i < Items.Num(); i++)
+    //{
+    //    // Aqui você criaria widgets de slot (ex: UItemSlotWidget)
+    //    // e adicionaria no GridSlots
 
-    }
+    //}
 }
