@@ -34,7 +34,7 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 void UInventoryComponent::InitializeInventory(TArray<FInventorySlot> Items)
 {
-    //TODO
+    Inventory = Items;
 }
 
 bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
@@ -68,27 +68,16 @@ bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
 
 bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
 {
-    //TODO Refactor
-    if (!Item || Quantity <= 0) return false;
+    FInventorySlot* ItemToBeRemoved = Inventory.FindByKey(Item->Id);
 
-    for (int32 i = Inventory.Num() - 1; i >= 0; --i)
+    ItemToBeRemoved->Quantity -= Quantity;
+
+    if (ItemToBeRemoved->Quantity <= 0)
     {
-        FInventorySlot& Slot = Inventory[i];
-        if (Slot.Item == Item)
-        {
-            int32 ToRemove = FMath::Min(Slot.Quantity, Quantity);
-            Slot.Quantity -= ToRemove;
-            Quantity -= ToRemove;
-
-            if (Slot.Quantity <= 0)
-                Inventory.RemoveAt(i);
-
-            if (Quantity <= 0)
-                return true;
-        }
+        Inventory.Remove(*ItemToBeRemoved);
     }
 
-    return Quantity <= 0;
+    return ItemToBeRemoved->Quantity <= 0;
 }
 
 void UInventoryComponent::MoveItem(UItemData* Item, FGridPosition NewPosition)

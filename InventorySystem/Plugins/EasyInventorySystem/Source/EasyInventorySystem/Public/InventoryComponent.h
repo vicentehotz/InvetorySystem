@@ -57,6 +57,11 @@ struct FInventorySlot
 		return Item->Id == Key;
 	}
 
+	FORCEINLINE bool operator==(const FInventorySlot& Other) const
+	{
+		return Item->Id == Other.Item->Id;
+	}
+
 	FORCEINLINE bool operator==(const FGridPosition& Key) const
 	{
 		return Position.Column == Key.Column 
