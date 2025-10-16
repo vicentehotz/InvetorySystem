@@ -39,45 +39,73 @@ void UInventoryComponent::InitializeInventory(TArray<FInventorySlot> Items)
 
 bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
 {
-    //TODO Refactor
+    
     if (!Item || Quantity <= 0) return false;
 
-    // Verifica se item já existe e pode empilhar
-    for (FInventorySlot& Slot : Inventory)
+    FInventorySlot* ItemToBeAdded = Inventory.FindByKey(Item->Id);
+
+    if (ItemToBeAdded)
     {
-        if (Slot.Item == Item && Slot.Quantity < Item->MaxStackSize)
+        int32 NewQuantity = ItemToBeAdded->Quantity + Quantity;
+
+        bool HasExceededMaxStack = NewQuantity > ItemToBeAdded->Item->MaxStackSize;
+
+        if (!HasExceededMaxStack)
         {
-            int32 SpaceLeft = Item->MaxStackSize - Slot.Quantity;
-            int32 ToAdd = FMath::Min(SpaceLeft, Quantity);
-            Slot.Quantity += ToAdd;
+            ItemToBeAdded->Quantity = NewQuantity;
+            return true;
+        }
+
+        if (Inventory.Num() >= MaxSlots)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("There's no inventory space"));
+            return false;
+        }
+
+        while (Quantity > 0 && Inventory.Num() < MaxSlots)
+        {
+            int32 ToAdd = FMath::Min(Quantity, Item->MaxStackSize);
+            Inventory.Add(FInventorySlot{ Item, ToAdd });
             Quantity -= ToAdd;
-            if (Quantity <= 0) return true;
         }
     }
-
-    // Adiciona novos slots
-    while (Quantity > 0 && Inventory.Num() < MaxSlots)
+    else
     {
-        int32 ToAdd = FMath::Min(Quantity, Item->MaxStackSize);
-        Inventory.Add(FInventorySlot{ Item, ToAdd });
-        Quantity -= ToAdd;
+        while (Quantity > 0 && Inventory.Num() < MaxSlots)
+        {
+            int32 ToAdd = FMath::Min(Quantity, Item->MaxStackSize);
+            Inventory.Add(FInventorySlot{ Item, ToAdd });
+            Quantity -= ToAdd;
+        }
     }
-
-    return Quantity <= 0;
+    
+    return true;
 }
 
 bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
 {
-    FInventorySlot* ItemToBeRemoved = Inventory.FindByKey(Item->Id);
+    if (!Item || Quantity <= 0) return false;
 
-    ItemToBeRemoved->Quantity -= Quantity;
+    //FInventorySlot* ItemToBeRemoved = Inventory.FindByKey(Item->Id);
+    int32 Index = Inventory.IndexOfByKey(Item->Id);
 
-    if (ItemToBeRemoved->Quantity <= 0)
+    if (Index < 0)
     {
-        Inventory.Remove(*ItemToBeRemoved);
+        UE_LOG(LogTemp, Warning, TEXT("Item not found"));
+        return false;
     }
 
-    return ItemToBeRemoved->Quantity <= 0;
+    int32 NewQuantity = Inventory[Index].Quantity - Quantity;
+
+    if (NewQuantity <= 0)
+    {
+        Inventory.RemoveAt(Index);
+        return true;
+    }
+
+    Inventory[Index].Quantity = NewQuantity;
+
+    return true;
 }
 
 void UInventoryComponent::MoveItem(UItemData* Item, FGridPosition NewPosition)
