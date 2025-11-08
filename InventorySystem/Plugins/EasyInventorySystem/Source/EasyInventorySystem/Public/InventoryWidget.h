@@ -16,12 +16,21 @@ class EASYINVENTORYSYSTEM_API UInventoryWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-    UFUNCTION(BlueprintCallable)
-    void InitializeInventory(UInventoryComponent* InventoryComp);
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void InitializeWithInventory(UInventoryComponent* InInventory);
 
 protected:
     UPROPERTY(meta = (BindWidget))
-    UUniformGridPanel* GridSlots;
+    UUniformGridPanel* InventoryGrid;
+
+    UPROPERTY(EditAnywhere, Category = "Inventory")
+    TSubclassOf<UUserWidget> InventorySlotWidgetClass;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+    UInventoryComponent* InventoryComponent;
+
+    UFUNCTION()
+    void OnInventoryUpdated();
 
 private:
     UPROPERTY()

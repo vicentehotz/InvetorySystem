@@ -4,24 +4,57 @@
 #include "InventoryWidget.h"
 #include "Components/UniformGridPanel.h"
 #include "InventoryComponent.h"
+#include "Components/UniformGridPanel.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/TextBlock.h"
+#include "Components/UniformGridSlot.h"
 
-void UInventoryWidget::InitializeInventory(UInventoryComponent* InventoryComp)
+void UInventoryWidget::InitializeWithInventory(UInventoryComponent* InInventory)
 {
-    InventoryRef = InventoryComp;
-    RefreshInventory();
+    InventoryComponent = InInventory;
+
+    if (InventoryComponent)
+    {
+        // Escuta o evento
+        InventoryComponent->OnInventoryUpdated.AddDynamic(this, &UInventoryWidget::OnInventoryUpdated);
+
+        // Atualiza uma vez na inicialização
+        OnInventoryUpdated();
+    }
+}
+
+void UInventoryWidget::OnInventoryUpdated()
+{
+    //TODO Refatorar
+    if (!InventoryComponent || !InventoryGrid) return;
+
+    InventoryGrid->ClearChildren();
+
+    const int32 Columns = 5; // Exemplo fixo, pode vir de config
+
+    for (int32 i = 0; i < InventoryComponent->Inventory.Num(); i++)
+    {
+        const FInventorySlot& InvSlot = InventoryComponent->Inventory[i];
+
+        if (!InvSlot.Item) continue;
+
+        UUserWidget* ItemWidget = CreateWidget<UUserWidget>(this, InventorySlotWidgetClass);
+        if (!ItemWidget) continue;
+
+        int32 Row = i / Columns;
+        int32 Col = i % Columns;
+
+        UUniformGridSlot* GridSlot = InventoryGrid->AddChildToUniformGrid(ItemWidget, Row, Col);
+        if (GridSlot)
+        {
+            GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+            GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
+        }
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("Inventory UI updated: %d items"), InventoryComponent->Inventory.Num());
 }
 
 void UInventoryWidget::RefreshInventory()
 {
-    //if (!InventoryRef || !GridSlots) return;
-
-    //GridSlots->ClearChildren();
-
-    //const auto& Items = InventoryRef->GetInventorySlots();
-    //for (int32 i = 0; i < Items.Num(); i++)
-    //{
-    //    // Aqui você criaria widgets de slot (ex: UItemSlotWidget)
-    //    // e adicionaria no GridSlots
-
-    //}
 }

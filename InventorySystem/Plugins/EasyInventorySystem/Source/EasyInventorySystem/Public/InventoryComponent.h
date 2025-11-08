@@ -69,6 +69,7 @@ struct FInventorySlot
 	}
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class EASYINVENTORYSYSTEM_API UInventoryComponent : public UActorComponent
@@ -87,6 +88,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	int32 MaxSlots = 20;
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnInventoryUpdated OnInventoryUpdated;
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void InitializeInventory(TArray<FInventorySlot> Items);
@@ -109,9 +113,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	TArray<FInventorySlot> GetInventory();
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void ShowInventory();
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<UUserWidget> InventoryWidgetClass;
 
 public:	
 	// Called every frame

@@ -20,7 +20,6 @@ void UInventoryComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
 }
 
 
@@ -79,6 +78,7 @@ bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
         }
     }
     
+    OnInventoryUpdated.Broadcast();
     return true;
 }
 
@@ -100,11 +100,12 @@ bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
     if (NewQuantity <= 0)
     {
         Inventory.RemoveAt(Index);
+        OnInventoryUpdated.Broadcast();
         return true;
     }
 
     Inventory[Index].Quantity = NewQuantity;
-
+    OnInventoryUpdated.Broadcast();
     return true;
 }
 
@@ -119,6 +120,7 @@ void UInventoryComponent::MoveItem(UItemData* Item, FGridPosition NewPosition)
     }
 
     ItemToBeMoved->Position = NewPosition;
+    OnInventoryUpdated.Broadcast();
 }
 
 UItemData* UInventoryComponent::GetItemById(FName ItemId)
@@ -149,4 +151,21 @@ int32 UInventoryComponent::GetItemCount(UItemData* Item) const
 TArray<FInventorySlot> UInventoryComponent::GetInventory()
 {
     return Inventory;
+}
+
+void UInventoryComponent::ShowInventory()
+{
+    /*if (!InventoryWidgetClass) return;
+
+    UInventoryWidget* InventoryWidget = CreateWidget<UInventoryWidget>(this, InventoryWidgetClass);
+    if (!InventoryWidget) return;
+
+    InventoryWidget->InitializeWithInventory(this);
+
+    InventoryWidget->AddToViewport();*/
+    //bShowMouseCursor = true;
+
+    /*FInputModeUIOnly InputMode;
+    InputMode.SetWidgetToFocus(InventoryWidget->TakeWidget());
+    SetInputMode(InputMode);*/
 }
