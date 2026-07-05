@@ -13,6 +13,10 @@ class UInventoryItemDefinition;
 class FInventoryLayoutPolicy;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntryAdded, const FInventoryEntry&, Entry);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntryChanged, const FInventoryEntry&, Entry);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntryRemoved, const FInventoryEntry&, Entry);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnOperationRejected, const FInventoryOpResult&, Result);
 
 /**
  * Drop-in inventory for any Actor. Layout mode (List or Grid) comes from the
@@ -31,8 +35,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TObjectPtr<UInventoryConfig> Config;
 
+	/** Coarse "something changed, re-read GetEntries()" signal. Kept for simple UI. */
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryUpdated OnInventoryUpdated;
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnEntryAdded OnEntryAdded;
+
+	/** Fired when an existing entry's quantity or placement changes (stacking, move). */
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnEntryChanged OnEntryChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnEntryRemoved OnEntryRemoved;
+
+	/** Fired whenever an operation's Status is not Success (includes Partial). */
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnOperationRejected OnOperationRejected;
 
 	/** Adds up to Quantity of the item. Partial adds report Status=Partial with the remainder. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
@@ -83,4 +102,7 @@ private:
 
 	FInventoryLayoutPolicy* GetPolicy();
 	const FInventoryLayoutPolicy* GetPolicy() const { return const_cast<UInventoryComponent*>(this)->GetPolicy(); }
+
+	/** Runs Mutator over InventoryList and diffs entries before/after to fire granular events. */
+	FInventoryOpResult ApplyMutation(TFunctionRef<FInventoryOpResult()> Mutator);
 };
