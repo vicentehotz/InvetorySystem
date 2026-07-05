@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Vicente Hotz. All Rights Reserved.
 
 #pragma once
 
@@ -12,7 +12,7 @@ class UStorableItemInterface : public UInterface
     GENERATED_BODY()
 };
 
-class EASYINVENTORYSYSTEM_API IStorableItemInterface
+class DUALSLOTCORE_API IStorableItemInterface
 {
     GENERATED_BODY()
 
@@ -21,7 +21,7 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
     class UItemData* GetItemData() const;
 
-    // Retorna a quantidade (stack, munição, etc.)
+    // Retorna a quantidade (stack, municao, etc.)
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
     int32 GetQuantity();
 

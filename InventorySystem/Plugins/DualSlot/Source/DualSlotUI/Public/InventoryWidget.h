@@ -1,40 +1,36 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Vicente Hotz. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Components/UniformGridPanel.h"
 #include "InventoryWidget.generated.h"
 
+class UInventoryComponent;
+class UUniformGridPanel;
+
 /**
- * 
+ * Base inventory widget. Listens to UInventoryComponent events; never owned by the component.
  */
 UCLASS()
-class EASYINVENTORYSYSTEM_API UInventoryWidget : public UUserWidget
+class DUALSLOTUI_API UInventoryWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
 public:
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void InitializeWithInventory(UInventoryComponent* InInventory);
 
 protected:
     UPROPERTY(meta = (BindWidget))
-    UUniformGridPanel* InventoryGrid;
+    TObjectPtr<UUniformGridPanel> InventoryGrid;
 
     UPROPERTY(EditAnywhere, Category = "Inventory")
     TSubclassOf<UUserWidget> InventorySlotWidgetClass;
 
     UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-    UInventoryComponent* InventoryComponent;
+    TObjectPtr<UInventoryComponent> InventoryComponent;
 
     UFUNCTION()
     void OnInventoryUpdated();
-
-private:
-    UPROPERTY()
-    UInventoryComponent* InventoryRef;
-
-    void RefreshInventory();
 };

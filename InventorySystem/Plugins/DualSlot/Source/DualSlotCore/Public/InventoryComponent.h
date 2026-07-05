@@ -1,11 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Vicente Hotz. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "ItemData.h"
-#include "InventoryWidget.h"
 #include "InventoryComponent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -36,16 +35,16 @@ struct FInventorySlot
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UItemData* Item;
+	TObjectPtr<UItemData> Item = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 Quantity;
+	int32 Quantity = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGridPosition Position;
 
-	FInventorySlot(UItemData* Item, const int32& Quantity)
-		: Item(Item), Quantity(Quantity)
+	FInventorySlot(UItemData* InItem, const int32& InQuantity)
+		: Item(InItem), Quantity(InQuantity)
 	{
 	}
 
@@ -54,37 +53,33 @@ struct FInventorySlot
 	// Important to be able to use FindByKey on TArray
 	FORCEINLINE bool operator==(const FName& Key) const
 	{
-		return Item->Id == Key;
+		return Item && Item->Id == Key;
 	}
 
 	FORCEINLINE bool operator==(const FInventorySlot& Other) const
 	{
-		return Item->Id == Other.Item->Id;
+		return Item && Other.Item && Item->Id == Other.Item->Id;
 	}
 
 	FORCEINLINE bool operator==(const FGridPosition& Key) const
 	{
-		return Position.Column == Key.Column 
+		return Position.Column == Key.Column
 			&& Position.Row == Key.Row;
 	}
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class EASYINVENTORYSYSTEM_API UInventoryComponent : public UActorComponent
+UCLASS( ClassGroup=(DualSlot), meta=(BlueprintSpawnableComponent) )
+class DUALSLOTCORE_API UInventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
-	// Sets default values for this component's properties
+public:
 	UInventoryComponent();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TArray<FInventorySlot> Inventory;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-	UInventoryWidget* Widget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	int32 MaxSlots = 20;
@@ -94,7 +89,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void InitializeInventory(TArray<FInventorySlot> Items);
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool AddItem(UItemData* Item, int32 Quantity = 1);
 
@@ -112,20 +107,4 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	TArray<FInventorySlot> GetInventory();
-
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void ShowInventory();
-
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-
-	UPROPERTY(EditAnywhere, Category = "Inventory")
-	TSubclassOf<UUserWidget> InventoryWidgetClass;
-
-public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-		
 };

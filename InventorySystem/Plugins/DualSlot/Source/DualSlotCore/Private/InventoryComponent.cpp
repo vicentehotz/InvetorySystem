@@ -1,44 +1,20 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright Vicente Hotz. All Rights Reserved.
 
 #include "InventoryComponent.h"
 
-// Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-
-	// ...
-}
-
-
-// Called when the game starts
-void UInventoryComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-}
-
-
-// Called every frame
-void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
 
 void UInventoryComponent::InitializeInventory(TArray<FInventorySlot> Items)
 {
     Inventory = Items;
+    OnInventoryUpdated.Broadcast();
 }
 
 bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
 {
-    
     if (!Item || Quantity <= 0) return false;
 
     FInventorySlot* ItemToBeAdded = Inventory.FindByKey(Item->Id);
@@ -52,6 +28,7 @@ bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
         if (!HasExceededMaxStack)
         {
             ItemToBeAdded->Quantity = NewQuantity;
+            OnInventoryUpdated.Broadcast();
             return true;
         }
 
@@ -77,7 +54,7 @@ bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
             Quantity -= ToAdd;
         }
     }
-    
+
     OnInventoryUpdated.Broadcast();
     return true;
 }
@@ -86,7 +63,6 @@ bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
 {
     if (!Item || Quantity <= 0) return false;
 
-    //FInventorySlot* ItemToBeRemoved = Inventory.FindByKey(Item->Id);
     int32 Index = Inventory.IndexOfByKey(Item->Id);
 
     if (Index < 0)
@@ -111,7 +87,11 @@ bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
 
 void UInventoryComponent::MoveItem(UItemData* Item, FGridPosition NewPosition)
 {
+    if (!Item) return;
+
     FInventorySlot* ItemToBeMoved = Inventory.FindByKey(Item->Id);
+    if (!ItemToBeMoved) return;
+
     FInventorySlot* ItemInDesiredPosition = Inventory.FindByKey(NewPosition);
 
     if (ItemInDesiredPosition)
@@ -151,21 +131,4 @@ int32 UInventoryComponent::GetItemCount(UItemData* Item) const
 TArray<FInventorySlot> UInventoryComponent::GetInventory()
 {
     return Inventory;
-}
-
-void UInventoryComponent::ShowInventory()
-{
-    /*if (!InventoryWidgetClass) return;
-
-    UInventoryWidget* InventoryWidget = CreateWidget<UInventoryWidget>(this, InventoryWidgetClass);
-    if (!InventoryWidget) return;
-
-    InventoryWidget->InitializeWithInventory(this);
-
-    InventoryWidget->AddToViewport();*/
-    //bShowMouseCursor = true;
-
-    /*FInputModeUIOnly InputMode;
-    InputMode.SetWidgetToFocus(InventoryWidget->TakeWidget());
-    SetInputMode(InputMode);*/
 }

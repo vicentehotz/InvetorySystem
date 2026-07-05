@@ -1,12 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright Vicente Hotz. All Rights Reserved.
 
 #include "InventoryWidget.h"
-#include "Components/UniformGridPanel.h"
 #include "InventoryComponent.h"
 #include "Components/UniformGridPanel.h"
-#include "Blueprint/WidgetTree.h"
-#include "Components/TextBlock.h"
 #include "Components/UniformGridSlot.h"
 
 void UInventoryWidget::InitializeWithInventory(UInventoryComponent* InInventory)
@@ -15,10 +11,7 @@ void UInventoryWidget::InitializeWithInventory(UInventoryComponent* InInventory)
 
     if (InventoryComponent)
     {
-        // Escuta o evento
         InventoryComponent->OnInventoryUpdated.AddDynamic(this, &UInventoryWidget::OnInventoryUpdated);
-
-        // Atualiza uma vez na inicialização
         OnInventoryUpdated();
     }
 }
@@ -51,10 +44,4 @@ void UInventoryWidget::OnInventoryUpdated()
             GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
         }
     }
-
-    UE_LOG(LogTemp, Warning, TEXT("Inventory UI updated: %d items"), InventoryComponent->Inventory.Num());
-}
-
-void UInventoryWidget::RefreshInventory()
-{
 }
