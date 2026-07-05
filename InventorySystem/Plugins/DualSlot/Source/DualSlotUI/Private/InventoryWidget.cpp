@@ -25,11 +25,12 @@ void UInventoryWidget::OnInventoryUpdated()
 
     const int32 Columns = 5; // Exemplo fixo, pode vir de config
 
-    for (int32 i = 0; i < InventoryComponent->Inventory.Num(); i++)
+    const TArray<FInventoryEntry> Entries = InventoryComponent->GetEntries();
+    for (int32 i = 0; i < Entries.Num(); i++)
     {
-        const FInventorySlot& InvSlot = InventoryComponent->Inventory[i];
+        const FInventoryEntry& Entry = Entries[i];
 
-        if (!InvSlot.Item) continue;
+        if (!Entry.Definition) continue;
 
         UUserWidget* ItemWidget = CreateWidget<UUserWidget>(this, InventorySlotWidgetClass);
         if (!ItemWidget) continue;

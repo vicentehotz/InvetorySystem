@@ -1,134 +1,137 @@
 // Copyright Vicente Hotz. All Rights Reserved.
 
 #include "InventoryComponent.h"
+#include "InventoryConfig.h"
+#include "InventoryItemDefinition.h"
+#include "Modes/ListLayoutPolicy.h"
+#include "Modes/GridLayoutPolicy.h"
 
 UInventoryComponent::UInventoryComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	bWantsInitializeComponent = true;
 }
 
-void UInventoryComponent::InitializeInventory(TArray<FInventorySlot> Items)
+// Defined here so TUniquePtr<FInventoryLayoutPolicy> destroys a complete type.
+UInventoryComponent::~UInventoryComponent() = default;
+
+void UInventoryComponent::InitializeComponent()
 {
-    Inventory = Items;
-    OnInventoryUpdated.Broadcast();
+	Super::InitializeComponent();
+	GetPolicy();
 }
 
-bool UInventoryComponent::AddItem(UInventoryItemDefinition* Item, int32 Quantity)
+void UInventoryComponent::UninitializeComponent()
 {
-    if (!Item || Quantity <= 0) return false;
-
-    FInventorySlot* ItemToBeAdded = Inventory.FindByKey(Item->Id);
-
-    if (ItemToBeAdded)
-    {
-        int32 NewQuantity = ItemToBeAdded->Quantity + Quantity;
-
-        bool HasExceededMaxStack = NewQuantity > ItemToBeAdded->Item->MaxStackSize;
-
-        if (!HasExceededMaxStack)
-        {
-            ItemToBeAdded->Quantity = NewQuantity;
-            OnInventoryUpdated.Broadcast();
-            return true;
-        }
-
-        if (Inventory.Num() >= MaxSlots)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("There's no inventory space"));
-            return false;
-        }
-
-        while (Quantity > 0 && Inventory.Num() < MaxSlots)
-        {
-            int32 ToAdd = FMath::Min(Quantity, Item->MaxStackSize);
-            Inventory.Add(FInventorySlot{ Item, ToAdd });
-            Quantity -= ToAdd;
-        }
-    }
-    else
-    {
-        while (Quantity > 0 && Inventory.Num() < MaxSlots)
-        {
-            int32 ToAdd = FMath::Min(Quantity, Item->MaxStackSize);
-            Inventory.Add(FInventorySlot{ Item, ToAdd });
-            Quantity -= ToAdd;
-        }
-    }
-
-    OnInventoryUpdated.Broadcast();
-    return true;
+	Policy.Reset();
+	Super::UninitializeComponent();
 }
 
-bool UInventoryComponent::RemoveItem(UInventoryItemDefinition* Item, int32 Quantity)
+FInventoryLayoutPolicy* UInventoryComponent::GetPolicy()
 {
-    if (!Item || Quantity <= 0) return false;
+	if (Policy)
+	{
+		return Policy.Get();
+	}
 
-    int32 Index = Inventory.IndexOfByKey(Item->Id);
+	if (!Config)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("[DualSlot] %s has no InventoryConfig assigned; using a default List config."),
+			*GetPathName());
+		Config = NewObject<UInventoryConfig>(this, NAME_None, RF_Transient);
+	}
 
-    if (Index < 0)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Item not found"));
-        return false;
-    }
-
-    int32 NewQuantity = Inventory[Index].Quantity - Quantity;
-
-    if (NewQuantity <= 0)
-    {
-        Inventory.RemoveAt(Index);
-        OnInventoryUpdated.Broadcast();
-        return true;
-    }
-
-    Inventory[Index].Quantity = NewQuantity;
-    OnInventoryUpdated.Broadcast();
-    return true;
+	switch (Config->LayoutMode)
+	{
+	case EInventoryLayoutMode::Grid:
+		Policy = MakeShared<FGridLayoutPolicy>(*Config);
+		break;
+	case EInventoryLayoutMode::List:
+	default:
+		Policy = MakeShared<FListLayoutPolicy>(*Config);
+		break;
+	}
+	return Policy.Get();
 }
 
-void UInventoryComponent::MoveItem(UInventoryItemDefinition* Item, FGridPosition NewPosition)
+FInventoryOpResult UInventoryComponent::TryAddItem(UInventoryItemDefinition* Definition, int32 Quantity)
 {
-    if (!Item) return;
-
-    FInventorySlot* ItemToBeMoved = Inventory.FindByKey(Item->Id);
-    if (!ItemToBeMoved) return;
-
-    FInventorySlot* ItemInDesiredPosition = Inventory.FindByKey(NewPosition);
-
-    if (ItemInDesiredPosition)
-    {
-        ItemInDesiredPosition->Position = ItemToBeMoved->Position;
-    }
-
-    ItemToBeMoved->Position = NewPosition;
-    OnInventoryUpdated.Broadcast();
+	const FInventoryOpResult Result = GetPolicy()->Add(InventoryList, Definition, Quantity, NextEntryId);
+	if (Result.Status == EInventoryOpStatus::Success || Result.Status == EInventoryOpStatus::Partial)
+	{
+		OnInventoryUpdated.Broadcast();
+	}
+	return Result;
 }
 
-UInventoryItemDefinition* UInventoryComponent::GetItemById(FName ItemId)
+FInventoryOpResult UInventoryComponent::RemoveItem(UInventoryItemDefinition* Definition, int32 Quantity)
 {
-    FInventorySlot* Slot = Inventory.FindByKey(ItemId);
-
-    if (Slot)
-    {
-        return Slot->Item;
-    }
-
-    UE_LOG(LogTemp, Warning, TEXT("Item with id %s not found"), *ItemId.ToString());
-
-    return nullptr;
+	const FInventoryOpResult Result = GetPolicy()->Remove(InventoryList, Definition, Quantity);
+	if (Result.Status == EInventoryOpStatus::Success || Result.Status == EInventoryOpStatus::Partial)
+	{
+		OnInventoryUpdated.Broadcast();
+	}
+	return Result;
 }
 
-int32 UInventoryComponent::GetItemCount(UInventoryItemDefinition* Item) const
+FInventoryOpResult UInventoryComponent::MoveEntryToSlot(int32 EntryId, int32 TargetSlot)
 {
-    int32 Count = 0;
-    for (const FInventorySlot& Slot : Inventory)
-    {
-        if (Slot.Item == Item)
-            Count += Slot.Quantity;
-    }
-    return Count;
+	const FInventoryOpResult Result = GetPolicy()->MoveToSlot(InventoryList, EntryId, TargetSlot);
+	if (Result.Succeeded())
+	{
+		OnInventoryUpdated.Broadcast();
+	}
+	return Result;
 }
 
-TArray<FInventorySlot> UInventoryComponent::GetInventory()
+FInventoryOpResult UInventoryComponent::MoveEntryToCell(int32 EntryId, FIntPoint TargetCell, bool bRotated)
 {
-    return Inventory;
+	const FInventoryOpResult Result = GetPolicy()->MoveToCell(InventoryList, EntryId, TargetCell, bRotated);
+	if (Result.Succeeded())
+	{
+		OnInventoryUpdated.Broadcast();
+	}
+	return Result;
+}
+
+bool UInventoryComponent::CanAccept(UInventoryItemDefinition* Definition, int32 Quantity) const
+{
+	return GetPolicy()->CanAccept(InventoryList, Definition, Quantity);
+}
+
+bool UInventoryComponent::FindEntry(int32 EntryId, FInventoryEntry& OutEntry) const
+{
+	const int32 Index = InventoryList.IndexOfEntry(EntryId);
+	if (Index == INDEX_NONE)
+	{
+		return false;
+	}
+	OutEntry = InventoryList.Entries[Index];
+	return true;
+}
+
+int32 UInventoryComponent::GetItemCount(const UInventoryItemDefinition* Definition) const
+{
+	int32 Count = 0;
+	for (const FInventoryEntry& Entry : InventoryList.Entries)
+	{
+		if (Entry.Definition == Definition)
+		{
+			Count += Entry.Quantity;
+		}
+	}
+	return Count;
+}
+
+UInventoryItemDefinition* UInventoryComponent::FindDefinitionById(FName ItemId) const
+{
+	for (const FInventoryEntry& Entry : InventoryList.Entries)
+	{
+		if (Entry.Definition && Entry.Definition->Id == ItemId)
+		{
+			return Entry.Definition;
+		}
+	}
+	return nullptr;
 }

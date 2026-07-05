@@ -18,6 +18,10 @@ struct DUALSLOTCORE_API FInventoryEntry : public FFastArraySerializerItem
 {
 	GENERATED_BODY()
 
+	/** Stable id assigned by the owning component; safe handle for Blueprint/UI. */
+	UPROPERTY(BlueprintReadOnly)
+	int32 EntryId = INDEX_NONE;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UInventoryItemDefinition> Definition = nullptr;
 
@@ -72,6 +76,16 @@ struct DUALSLOTCORE_API FInventoryList : public FFastArraySerializer
 	void MarkEntryDirty(FInventoryEntry& Entry)
 	{
 		MarkItemDirty(Entry);
+	}
+
+	FInventoryEntry* FindEntryById(int32 EntryId)
+	{
+		return Entries.FindByPredicate([EntryId](const FInventoryEntry& E) { return E.EntryId == EntryId; });
+	}
+
+	int32 IndexOfEntry(int32 EntryId) const
+	{
+		return Entries.IndexOfByPredicate([EntryId](const FInventoryEntry& E) { return E.EntryId == EntryId; });
 	}
 };
 
