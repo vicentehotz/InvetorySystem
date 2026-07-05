@@ -13,7 +13,7 @@ void UInventoryComponent::InitializeInventory(TArray<FInventorySlot> Items)
     OnInventoryUpdated.Broadcast();
 }
 
-bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
+bool UInventoryComponent::AddItem(UInventoryItemDefinition* Item, int32 Quantity)
 {
     if (!Item || Quantity <= 0) return false;
 
@@ -59,7 +59,7 @@ bool UInventoryComponent::AddItem(UItemData* Item, int32 Quantity)
     return true;
 }
 
-bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
+bool UInventoryComponent::RemoveItem(UInventoryItemDefinition* Item, int32 Quantity)
 {
     if (!Item || Quantity <= 0) return false;
 
@@ -85,7 +85,7 @@ bool UInventoryComponent::RemoveItem(UItemData* Item, int32 Quantity)
     return true;
 }
 
-void UInventoryComponent::MoveItem(UItemData* Item, FGridPosition NewPosition)
+void UInventoryComponent::MoveItem(UInventoryItemDefinition* Item, FGridPosition NewPosition)
 {
     if (!Item) return;
 
@@ -103,7 +103,7 @@ void UInventoryComponent::MoveItem(UItemData* Item, FGridPosition NewPosition)
     OnInventoryUpdated.Broadcast();
 }
 
-UItemData* UInventoryComponent::GetItemById(FName ItemId)
+UInventoryItemDefinition* UInventoryComponent::GetItemById(FName ItemId)
 {
     FInventorySlot* Slot = Inventory.FindByKey(ItemId);
 
@@ -117,7 +117,7 @@ UItemData* UInventoryComponent::GetItemById(FName ItemId)
     return nullptr;
 }
 
-int32 UInventoryComponent::GetItemCount(UItemData* Item) const
+int32 UInventoryComponent::GetItemCount(UInventoryItemDefinition* Item) const
 {
     int32 Count = 0;
     for (const FInventorySlot& Slot : Inventory)
