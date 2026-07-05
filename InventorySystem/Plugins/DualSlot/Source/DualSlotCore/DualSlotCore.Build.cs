@@ -13,7 +13,8 @@ public class DualSlotCore : ModuleRules
 			{
 				"Core",
 				"CoreUObject",
-				"Engine"
+				"Engine",
+				"NetCore"
 			}
 		);
 	}

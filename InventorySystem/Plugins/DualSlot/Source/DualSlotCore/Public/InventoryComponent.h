@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "ItemData.h"
+#include "InventoryItemDefinition.h"
 #include "InventoryComponent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -35,7 +35,7 @@ struct FInventorySlot
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UItemData> Item = nullptr;
+	TObjectPtr<UInventoryItemDefinition> Item = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Quantity = 0;
@@ -43,7 +43,7 @@ struct FInventorySlot
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGridPosition Position;
 
-	FInventorySlot(UItemData* InItem, const int32& InQuantity)
+	FInventorySlot(UInventoryItemDefinition* InItem, const int32& InQuantity)
 		: Item(InItem), Quantity(InQuantity)
 	{
 	}
@@ -91,19 +91,19 @@ public:
 	void InitializeInventory(TArray<FInventorySlot> Items);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool AddItem(UItemData* Item, int32 Quantity = 1);
+	bool AddItem(UInventoryItemDefinition* Item, int32 Quantity = 1);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool RemoveItem(UItemData* Item, int32 Quantity = 1);
+	bool RemoveItem(UInventoryItemDefinition* Item, int32 Quantity = 1);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void MoveItem(UItemData* Item, FGridPosition NewPosition);
+	void MoveItem(UInventoryItemDefinition* Item, FGridPosition NewPosition);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	UItemData* GetItemById(FName ItemId);
+	UInventoryItemDefinition* GetItemById(FName ItemId);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	int32 GetItemCount(UItemData* Item) const;
+	int32 GetItemCount(UInventoryItemDefinition* Item) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	TArray<FInventorySlot> GetInventory();

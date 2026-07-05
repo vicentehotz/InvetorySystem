@@ -19,14 +19,14 @@ class DUALSLOTCORE_API IStorableItemInterface
 public:
     // Retorna o DataAsset associado (metadados do item)
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
-    class UItemData* GetItemData() const;
+    class UInventoryItemDefinition* GetItemData() const;
 
     // Retorna a quantidade (stack, municao, etc.)
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
     int32 GetQuantity();
 
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
-    class UItemData* StoreItem();
+    class UInventoryItemDefinition* StoreItem();
 
     UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Inventory")
     void OnStored();
