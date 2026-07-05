@@ -55,44 +55,73 @@ FInventoryLayoutPolicy* UInventoryComponent::GetPolicy()
 	return Policy.Get();
 }
 
-FInventoryOpResult UInventoryComponent::TryAddItem(UInventoryItemDefinition* Definition, int32 Quantity)
+FInventoryOpResult UInventoryComponent::ApplyMutation(TFunctionRef<FInventoryOpResult()> Mutator)
 {
-	const FInventoryOpResult Result = GetPolicy()->Add(InventoryList, Definition, Quantity, NextEntryId);
+	TMap<int32, FInventoryEntry> Before;
+	Before.Reserve(InventoryList.Entries.Num());
+	for (const FInventoryEntry& Entry : InventoryList.Entries)
+	{
+		Before.Add(Entry.EntryId, Entry);
+	}
+
+	const FInventoryOpResult Result = Mutator();
+
+	TSet<int32> SeenAfter;
+	for (const FInventoryEntry& Entry : InventoryList.Entries)
+	{
+		SeenAfter.Add(Entry.EntryId);
+
+		if (const FInventoryEntry* Prior = Before.Find(Entry.EntryId))
+		{
+			if (Prior->Quantity != Entry.Quantity || Prior->SlotIndex != Entry.SlotIndex
+				|| Prior->TopLeft != Entry.TopLeft || Prior->bRotated != Entry.bRotated)
+			{
+				OnEntryChanged.Broadcast(Entry);
+			}
+		}
+		else
+		{
+			OnEntryAdded.Broadcast(Entry);
+		}
+	}
+
+	for (const auto& Pair : Before)
+	{
+		if (!SeenAfter.Contains(Pair.Key))
+		{
+			OnEntryRemoved.Broadcast(Pair.Value);
+		}
+	}
+
+	if (Result.Status != EInventoryOpStatus::Success)
+	{
+		OnOperationRejected.Broadcast(Result);
+	}
 	if (Result.Status == EInventoryOpStatus::Success || Result.Status == EInventoryOpStatus::Partial)
 	{
 		OnInventoryUpdated.Broadcast();
 	}
 	return Result;
+}
+
+FInventoryOpResult UInventoryComponent::TryAddItem(UInventoryItemDefinition* Definition, int32 Quantity)
+{
+	return ApplyMutation([&]() { return GetPolicy()->Add(InventoryList, Definition, Quantity, NextEntryId); });
 }
 
 FInventoryOpResult UInventoryComponent::RemoveItem(UInventoryItemDefinition* Definition, int32 Quantity)
 {
-	const FInventoryOpResult Result = GetPolicy()->Remove(InventoryList, Definition, Quantity);
-	if (Result.Status == EInventoryOpStatus::Success || Result.Status == EInventoryOpStatus::Partial)
-	{
-		OnInventoryUpdated.Broadcast();
-	}
-	return Result;
+	return ApplyMutation([&]() { return GetPolicy()->Remove(InventoryList, Definition, Quantity); });
 }
 
 FInventoryOpResult UInventoryComponent::MoveEntryToSlot(int32 EntryId, int32 TargetSlot)
 {
-	const FInventoryOpResult Result = GetPolicy()->MoveToSlot(InventoryList, EntryId, TargetSlot);
-	if (Result.Succeeded())
-	{
-		OnInventoryUpdated.Broadcast();
-	}
-	return Result;
+	return ApplyMutation([&]() { return GetPolicy()->MoveToSlot(InventoryList, EntryId, TargetSlot); });
 }
 
 FInventoryOpResult UInventoryComponent::MoveEntryToCell(int32 EntryId, FIntPoint TargetCell, bool bRotated)
 {
-	const FInventoryOpResult Result = GetPolicy()->MoveToCell(InventoryList, EntryId, TargetCell, bRotated);
-	if (Result.Succeeded())
-	{
-		OnInventoryUpdated.Broadcast();
-	}
-	return Result;
+	return ApplyMutation([&]() { return GetPolicy()->MoveToCell(InventoryList, EntryId, TargetCell, bRotated); });
 }
 
 bool UInventoryComponent::CanAccept(UInventoryItemDefinition* Definition, int32 Quantity) const
