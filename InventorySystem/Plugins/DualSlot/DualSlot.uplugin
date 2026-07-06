@@ -1,0 +1,29 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "DualSlot",
+	"Description": "DualSlot - List & Grid inventory, one component. Design-time switchable layout modes, fully decoupled from UI.",
+	"Category": "Gameplay",
+	"CreatedBy": "Vicente Hotz",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "DualSlotCore",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "DualSlotUI",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
