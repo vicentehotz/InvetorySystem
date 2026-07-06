@@ -1,9 +1,9 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.1.0",
-	"FriendlyName": "DualSlot",
-	"Description": "DualSlot - List & Grid inventory, one component. Design-time switchable layout modes, fully decoupled from UI.",
+	"VersionName": "1.0.0",
+	"FriendlyName": "DualSlot - List & Grid Inventory",
+	"Description": "A drop-in inventory component for any Actor. Choose List (linear, stackable slots) or Grid (spatial, Tetris-style with item footprints and rotation) per inventory via a Data Asset - no recompiling, no subclassing. Fully decoupled from UI through Blueprint-callable interfaces and granular events, with a replication-ready data layer for future multiplayer support.",
 	"Category": "Gameplay",
 	"CreatedBy": "Vicente Hotz",
 	"CreatedByURL": "",
@@ -11,7 +11,7 @@
 	"MarketplaceURL": "",
 	"SupportURL": "",
 	"CanContainContent": true,
-	"IsBetaVersion": true,
+	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
 	"Modules": [

@@ -131,7 +131,7 @@ The granular events are computed by diffing the inventory before/after each muta
 
 1. Call `InitializeWithInventory(InventoryComponent)` once you have a reference to the component.
 2. Subclass in Blueprint and implement `OnEntryAddedBP` / `OnEntryChangedBP` / `OnEntryRemovedBP` / `OnOperationRejectedBP` to render your own List or Grid view incrementally.
-3. Alternatively, override `OnInventoryUpdated` for a simple full-rebuild UI (the default C++ implementation does exactly that against a `UUniformGridPanel` bound as `InventoryGrid`).
+3. Alternatively, override `OnInventoryUpdated` for a simple full-rebuild UI (the default C++ implementation does exactly that against a `UUniformGridPanel` bound as `InventoryGrid`, placing each entry at its real `TopLeft` cell in Grid mode).
 
 To find the inventory without hard-coding a cast to a concrete Actor class, have the owning Actor implement `IInventoryOwnerInterface`:
 

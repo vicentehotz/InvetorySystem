@@ -1,6 +1,7 @@
 // Copyright Vicente Hotz. All Rights Reserved.
 
 #include "InventoryComponent.h"
+#include "DualSlotCore.h"
 #include "InventoryConfig.h"
 #include "InventoryItemDefinition.h"
 #include "Modes/ListLayoutPolicy.h"
@@ -36,8 +37,8 @@ FInventoryLayoutPolicy* UInventoryComponent::GetPolicy()
 
 	if (!Config)
 	{
-		UE_LOG(LogTemp, Warning,
-			TEXT("[DualSlot] %s has no InventoryConfig assigned; using a default List config."),
+		UE_LOG(LogDualSlot, Warning,
+			TEXT("%s has no InventoryConfig assigned; using a default List config."),
 			*GetPathName());
 		Config = NewObject<UInventoryConfig>(this, NAME_None, RF_Transient);
 	}
