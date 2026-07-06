@@ -3,6 +3,9 @@
 #pragma once
 
 #include "Modules/ModuleManager.h"
+#include "Logging/LogMacros.h"
+
+DUALSLOTCORE_API DECLARE_LOG_CATEGORY_EXTERN(LogDualSlot, Log, All);
 
 class FDualSlotCoreModule : public IModuleInterface
 {

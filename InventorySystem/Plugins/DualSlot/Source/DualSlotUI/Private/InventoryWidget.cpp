@@ -2,6 +2,7 @@
 
 #include "InventoryWidget.h"
 #include "InventoryComponent.h"
+#include "InventoryConfig.h"
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
 
@@ -33,7 +34,13 @@ void UInventoryWidget::OnInventoryUpdated()
 
     InventoryGrid->ClearChildren();
 
-    const int32 Columns = 5; // Exemplo fixo, pode vir de config
+    const bool bIsGridMode = InventoryComponent->Config
+        && InventoryComponent->Config->LayoutMode == EInventoryLayoutMode::Grid;
+
+    // List mode has no natural column count; pick a squarish default from capacity.
+    const int32 ListColumns = InventoryComponent->Config
+        ? FMath::Max(1, FMath::CeilToInt(FMath::Sqrt(static_cast<float>(InventoryComponent->Config->MaxSlots))))
+        : 5;
 
     const TArray<FInventoryEntry> Entries = InventoryComponent->GetEntries();
     for (int32 i = 0; i < Entries.Num(); i++)
@@ -45,8 +52,10 @@ void UInventoryWidget::OnInventoryUpdated()
         UUserWidget* ItemWidget = CreateWidget<UUserWidget>(this, InventorySlotWidgetClass);
         if (!ItemWidget) continue;
 
-        int32 Row = i / Columns;
-        int32 Col = i % Columns;
+        // Grid mode: honor the entry's real cell so spatial placement is visible.
+        // List mode: no inherent 2D position, so lay slots out left-to-right, wrapping.
+        const int32 Row = bIsGridMode ? Entry.TopLeft.Y : (i / ListColumns);
+        const int32 Col = bIsGridMode ? Entry.TopLeft.X : (i % ListColumns);
 
         UUniformGridSlot* GridSlot = InventoryGrid->AddChildToUniformGrid(ItemWidget, Row, Col);
         if (GridSlot)

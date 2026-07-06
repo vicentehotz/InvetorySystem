@@ -2,6 +2,8 @@
 
 #include "DualSlotCore.h"
 
+DEFINE_LOG_CATEGORY(LogDualSlot);
+
 #define LOCTEXT_NAMESPACE "FDualSlotCoreModule"
 
 void FDualSlotCoreModule::StartupModule()
