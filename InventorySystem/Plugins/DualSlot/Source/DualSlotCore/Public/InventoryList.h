@@ -1,4 +1,4 @@
-// Copyright Vicente Hotz. All Rights Reserved.
+// Copyright Under the Bay Studios. All Rights Reserved.
 
 #pragma once
 
@@ -19,22 +19,22 @@ struct DUALSLOTCORE_API FInventoryEntry : public FFastArraySerializerItem
 	GENERATED_BODY()
 
 	/** Stable id assigned by the owning component; safe handle for Blueprint/UI. */
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	int32 EntryId = INDEX_NONE;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TObjectPtr<UInventoryItemDefinition> Definition = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	int32 Quantity = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	int32 SlotIndex = INDEX_NONE;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	FIntPoint TopLeft = FIntPoint(INDEX_NONE, INDEX_NONE);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	bool bRotated = false;
 
 	/** Effective footprint in cells, accounting for rotation. */
