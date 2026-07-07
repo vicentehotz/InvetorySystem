@@ -1,4 +1,4 @@
-// Copyright Vicente Hotz. All Rights Reserved.
+// Copyright Under the Bay Studios. All Rights Reserved.
 
 #pragma once
 
@@ -17,11 +17,11 @@ class DUALSLOTCORE_API IStorableItemInterface
     GENERATED_BODY()
 
 public:
-    // Retorna o DataAsset associado (metadados do item)
+    // Returns the associated item definition asset (item metadata).
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
     class UInventoryItemDefinition* GetItemData() const;
 
-    // Retorna a quantidade (stack, municao, etc.)
+    // Returns the quantity (stack size, ammo count, etc.).
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Inventory")
     int32 GetQuantity();
 

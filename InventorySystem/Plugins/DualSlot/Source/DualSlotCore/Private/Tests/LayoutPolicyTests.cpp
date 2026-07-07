@@ -1,8 +1,9 @@
-// Copyright Vicente Hotz. All Rights Reserved.
+// Copyright Under the Bay Studios. All Rights Reserved.
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Misc/AutomationTest.h"
+#include "UObject/Package.h"
 #include "Modes/ListLayoutPolicy.h"
 #include "Modes/GridLayoutPolicy.h"
 #include "InventoryConfig.h"

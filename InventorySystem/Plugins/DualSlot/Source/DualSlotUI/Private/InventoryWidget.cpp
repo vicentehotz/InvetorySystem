@@ -1,4 +1,4 @@
-// Copyright Vicente Hotz. All Rights Reserved.
+// Copyright Under the Bay Studios. All Rights Reserved.
 
 #include "InventoryWidget.h"
 #include "InventoryComponent.h"
