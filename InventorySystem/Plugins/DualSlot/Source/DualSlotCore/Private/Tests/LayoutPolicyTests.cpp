@@ -6,6 +6,7 @@
 #include "UObject/Package.h"
 #include "Modes/ListLayoutPolicy.h"
 #include "Modes/GridLayoutPolicy.h"
+#include "InventoryComponent.h"
 #include "InventoryConfig.h"
 #include "InventoryItemDefinition.h"
 #include "InventoryList.h"
@@ -38,6 +39,32 @@ namespace DualSlotTestUtil
 		Item->Size = Size;
 		Item->bRotatable = bRotatable;
 		return Item;
+	}
+
+	static UInventoryComponent* MakeComponent(UInventoryConfig* Config)
+	{
+		UInventoryComponent* Component = NewObject<UInventoryComponent>(GetTransientPackage());
+		Component->Config = Config;
+		return Component;
+	}
+
+	static FInventoryExchangeItem Exchange(UInventoryItemDefinition* Definition, int32 Quantity)
+	{
+		FInventoryExchangeItem Item;
+		Item.Definition = Definition;
+		Item.Quantity = Quantity;
+		return Item;
+	}
+
+	/** Stable, order-independent snapshot of contents for before/after equality checks. */
+	static TMap<int32, int32> ContentCounts(const TArray<FInventoryEntry>& Entries)
+	{
+		TMap<int32, int32> Counts;
+		for (const FInventoryEntry& Entry : Entries)
+		{
+			Counts.FindOrAdd(Entry.EntryId) = Entry.Quantity;
+		}
+		return Counts;
 	}
 }
 
@@ -486,6 +513,193 @@ bool FGridCanAcceptFragmentedSpaceTest::RunTest(const FString& Parameters)
 
 	FInventoryOpResult Result = Policy.Add(List, WideItem, 1, NextEntryId);
 	TestEqual(TEXT("Add actually fails to place the wide item"), Result.Status, EInventoryOpStatus::InventoryFull);
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// ExecuteExchange (atomic crafting) — exercised through UInventoryComponent
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExchangeSuccessfulCraftTest, "DualSlot.Component.Exchange.SuccessfulCraft",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+bool FExchangeSuccessfulCraftTest::RunTest(const FString& Parameters)
+{
+	using namespace DualSlotTestUtil;
+	UInventoryComponent* Inv = MakeComponent(MakeListConfig(10));
+	UInventoryItemDefinition* A = MakeItem(10);
+	UInventoryItemDefinition* B = MakeItem(10);
+	UInventoryItemDefinition* C = MakeItem(10);
+
+	Inv->TryAddItem(A, 2);
+	Inv->TryAddItem(B, 1);
+
+	TArray<FInventoryExchangeItem> Consume{ Exchange(A, 2), Exchange(B, 1) };
+	TArray<FInventoryExchangeItem> Produce{ Exchange(C, 1) };
+
+	FInventoryOpResult Result = Inv->ExecuteExchange(Consume, Produce);
+	TestEqual(TEXT("Exchange succeeds"), Result.Status, EInventoryOpStatus::Success);
+	TestEqual(TEXT("A consumed"), Inv->GetItemCount(A), 0);
+	TestEqual(TEXT("B consumed"), Inv->GetItemCount(B), 0);
+	TestEqual(TEXT("C produced"), Inv->GetItemCount(C), 1);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExchangeAggregatesDuplicateInputsTest, "DualSlot.Component.Exchange.AggregatesDuplicateInputs",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+bool FExchangeAggregatesDuplicateInputsTest::RunTest(const FString& Parameters)
+{
+	using namespace DualSlotTestUtil;
+	UInventoryComponent* Inv = MakeComponent(MakeListConfig(10));
+	UInventoryItemDefinition* A = MakeItem(10);
+	UInventoryItemDefinition* C = MakeItem(10);
+
+	Inv->TryAddItem(A, 3);
+
+	// Same definition listed twice must be summed (2+2=4 > 3 available) and fail, not double-remove.
+	TArray<FInventoryExchangeItem> Consume{ Exchange(A, 2), Exchange(A, 2) };
+	TArray<FInventoryExchangeItem> Produce{ Exchange(C, 1) };
+
+	FInventoryOpResult Result = Inv->ExecuteExchange(Consume, Produce);
+	TestFalse(TEXT("Aggregated demand of 4 against 3 fails"), Result.Succeeded());
+	TestEqual(TEXT("A untouched by failed exchange"), Inv->GetItemCount(A), 3);
+	TestEqual(TEXT("C not produced"), Inv->GetItemCount(C), 0);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExchangeRollbackInsufficientTest, "DualSlot.Component.Exchange.RollbackOnInsufficientIngredients",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+bool FExchangeRollbackInsufficientTest::RunTest(const FString& Parameters)
+{
+	using namespace DualSlotTestUtil;
+	UInventoryComponent* Inv = MakeComponent(MakeListConfig(10));
+	UInventoryItemDefinition* A = MakeItem(10);
+	UInventoryItemDefinition* C = MakeItem(10);
+
+	Inv->TryAddItem(A, 1);
+	const TMap<int32, int32> Before = ContentCounts(Inv->GetEntries());
+
+	TArray<FInventoryExchangeItem> Consume{ Exchange(A, 2) }; // needs 2, only 1 present
+	TArray<FInventoryExchangeItem> Produce{ Exchange(C, 1) };
+
+	FInventoryOpResult Result = Inv->ExecuteExchange(Consume, Produce);
+	TestFalse(TEXT("Exchange fails"), Result.Succeeded());
+	TestEqual(TEXT("A still present after rollback"), Inv->GetItemCount(A), 1);
+	TestEqual(TEXT("C never produced"), Inv->GetItemCount(C), 0);
+	TestTrue(TEXT("Inventory contents identical after rollback"), ContentCounts(Inv->GetEntries()).OrderIndependentCompareEqual(Before));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExchangeRollbackNoSpaceTest, "DualSlot.Component.Exchange.RollbackWhenOutputDoesNotFit",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+bool FExchangeRollbackNoSpaceTest::RunTest(const FString& Parameters)
+{
+	using namespace DualSlotTestUtil;
+	// One free slot after consuming A; two distinct unstackable outputs can't both fit.
+	UInventoryComponent* Inv = MakeComponent(MakeListConfig(1, /*bAutoStack*/ false));
+	UInventoryItemDefinition* A = MakeItem(1);
+	UInventoryItemDefinition* B = MakeItem(1);
+	UInventoryItemDefinition* C = MakeItem(1);
+
+	Inv->TryAddItem(A, 1);
+
+	TArray<FInventoryExchangeItem> Consume{ Exchange(A, 1) };
+	TArray<FInventoryExchangeItem> Produce{ Exchange(B, 1), Exchange(C, 1) }; // B fits, C has nowhere to go
+
+	FInventoryOpResult Result = Inv->ExecuteExchange(Consume, Produce);
+	TestFalse(TEXT("Exchange fails when second output can't be placed"), Result.Succeeded());
+	TestEqual(TEXT("A restored after rollback"), Inv->GetItemCount(A), 1);
+	TestEqual(TEXT("B not produced"), Inv->GetItemCount(B), 0);
+	TestEqual(TEXT("C not produced"), Inv->GetItemCount(C), 0);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExchangeSwapInSingleSlotTest, "DualSlot.Component.Exchange.SwapSucceedsInSingleSlot",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+bool FExchangeSwapInSingleSlotTest::RunTest(const FString& Parameters)
+{
+	using namespace DualSlotTestUtil;
+	// The reason this API exists: a 1-slot inventory holding A can become B in one atomic op,
+	// because the consume runs first and frees the slot the produce needs.
+	UInventoryComponent* Inv = MakeComponent(MakeListConfig(1, /*bAutoStack*/ false));
+	UInventoryItemDefinition* A = MakeItem(1);
+	UInventoryItemDefinition* B = MakeItem(1);
+
+	Inv->TryAddItem(A, 1);
+
+	TArray<FInventoryExchangeItem> Consume{ Exchange(A, 1) };
+	TArray<FInventoryExchangeItem> Produce{ Exchange(B, 1) };
+
+	FInventoryOpResult Result = Inv->ExecuteExchange(Consume, Produce);
+	TestEqual(TEXT("Swap succeeds"), Result.Status, EInventoryOpStatus::Success);
+	TestEqual(TEXT("A gone"), Inv->GetItemCount(A), 0);
+	TestEqual(TEXT("B present"), Inv->GetItemCount(B), 1);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExchangeInvalidRequestTest, "DualSlot.Component.Exchange.InvalidRequestDoesNoWork",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+bool FExchangeInvalidRequestTest::RunTest(const FString& Parameters)
+{
+	using namespace DualSlotTestUtil;
+	UInventoryComponent* Inv = MakeComponent(MakeListConfig(10));
+	UInventoryItemDefinition* A = MakeItem(10);
+	Inv->TryAddItem(A, 2);
+
+	// Both arrays empty.
+	FInventoryOpResult Empty = Inv->ExecuteExchange({}, {});
+	TestEqual(TEXT("Both empty is InvalidRequest"), Empty.Status, EInventoryOpStatus::InvalidRequest);
+
+	// Null definition in a request.
+	TArray<FInventoryExchangeItem> BadConsume{ Exchange(nullptr, 1) };
+	FInventoryOpResult Null = Inv->ExecuteExchange(BadConsume, {});
+	TestEqual(TEXT("Null definition is InvalidRequest"), Null.Status, EInventoryOpStatus::InvalidRequest);
+
+	// Non-positive quantity.
+	TArray<FInventoryExchangeItem> BadQty{ Exchange(A, 0) };
+	FInventoryOpResult Zero = Inv->ExecuteExchange(BadQty, {});
+	TestEqual(TEXT("Zero quantity is InvalidRequest"), Zero.Status, EInventoryOpStatus::InvalidRequest);
+
+	TestEqual(TEXT("Inventory untouched by invalid requests"), Inv->GetItemCount(A), 2);
+	return true;
+}
+
+// NOTE: Zero-item-events-on-rollback is asserted here via exact content equality rather than by
+// counting delegate broadcasts. The events are DYNAMIC multicast delegates (AddDynamic requires a
+// UFUNCTION target), and a UCLASS event-counter helper cannot be declared inside this .cpp because
+// UHT generates no companion header for it. ApplyMutation derives all granular OnEntryAdded/Changed/
+// Removed events by diffing the entry set before vs. after the mutator; a successful rollback restores
+// Entries byte-for-byte, so that diff is empty and zero item events fire by construction — while the
+// non-Success result still triggers exactly one OnOperationRejected. The state-equality assertions
+// below therefore transitively verify the zero-events guarantee.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FExchangeRollbackLeavesStateIdenticalTest, "DualSlot.Component.Exchange.RollbackLeavesStateIdentical",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+bool FExchangeRollbackLeavesStateIdenticalTest::RunTest(const FString& Parameters)
+{
+	using namespace DualSlotTestUtil;
+	UInventoryComponent* Inv = MakeComponent(MakeListConfig(10));
+	UInventoryItemDefinition* A = MakeItem(10);
+	UInventoryItemDefinition* B = MakeItem(10);
+	UInventoryItemDefinition* C = MakeItem(10);
+
+	Inv->TryAddItem(A, 5);
+	Inv->TryAddItem(B, 3);
+	const TArray<FInventoryEntry> BeforeEntries = Inv->GetEntries();
+	const TMap<int32, int32> Before = ContentCounts(BeforeEntries);
+
+	// Needs 6 A but only 5 present -> must fail and restore everything, including entry ids.
+	TArray<FInventoryExchangeItem> Consume{ Exchange(A, 6) };
+	TArray<FInventoryExchangeItem> Produce{ Exchange(C, 1) };
+
+	FInventoryOpResult Result = Inv->ExecuteExchange(Consume, Produce);
+	TestFalse(TEXT("Exchange fails"), Result.Succeeded());
+
+	const TArray<FInventoryEntry> AfterEntries = Inv->GetEntries();
+	TestEqual(TEXT("Same number of entries after rollback"), AfterEntries.Num(), BeforeEntries.Num());
+	TestTrue(TEXT("Same entry ids and quantities after rollback"),
+		ContentCounts(AfterEntries).OrderIndependentCompareEqual(Before));
+	TestEqual(TEXT("A unchanged"), Inv->GetItemCount(A), 5);
+	TestEqual(TEXT("B unchanged"), Inv->GetItemCount(B), 3);
+	TestEqual(TEXT("C never produced"), Inv->GetItemCount(C), 0);
 	return true;
 }
 

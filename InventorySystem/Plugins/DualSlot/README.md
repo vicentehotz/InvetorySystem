@@ -82,6 +82,7 @@ All functions are `BlueprintCallable`.
 |---|---|---|
 | `TryAddItem(Definition, Quantity)` | `FInventoryOpResult` | stacks first (if `bAutoStack`), then opens new entries |
 | `RemoveItem(Definition, Quantity)` | `FInventoryOpResult` | drains smallest stacks first |
+| `ExecuteExchange(Consume[], Produce[])` | `FInventoryOpResult` | **atomic** crafting swap — see below |
 | `MoveEntryToSlot(EntryId, TargetSlot)` | `FInventoryOpResult` | **List mode only**; swaps with any occupant |
 | `MoveEntryToCell(EntryId, TargetCell, bRotated)` | `FInventoryOpResult` | **Grid mode only**; fails if the area is occupied |
 | `CanAccept(Definition, Quantity)` | `bool` | true if the full quantity would fit without mutating anything |
@@ -91,6 +92,29 @@ All functions are `BlueprintCallable`.
 | `FindDefinitionById(ItemId)` | `UInventoryItemDefinition*` | |
 
 Calling `MoveEntryToSlot` in Grid mode (or `MoveEntryToCell` in List mode) returns `Status = WrongMode` rather than doing nothing silently.
+
+### Atomic crafting: `ExecuteExchange`
+
+```cpp
+FInventoryOpResult ExecuteExchange(
+    const TArray<FInventoryExchangeItem>& Consume,
+    const TArray<FInventoryExchangeItem>& Produce);
+```
+
+Consumes **all** `Consume` inputs and produces **all** `Produce` outputs as a single all-or-nothing operation. Removals run first, so an output can occupy a slot freed by an input — a 1-slot inventory holding item *A* can be crafted into item *B* even though *A* and *B* never coexist. `FInventoryExchangeItem` is simply a `{ Definition, Quantity }` pair.
+
+If **any** step fails (not enough ingredients, or no room for an output — a `Partial` result counts as failure here, since the operation is atomic), the inventory is restored **exactly** and no `OnEntryAdded/Changed/Removed` events fire; only a single `OnOperationRejected` is broadcast carrying the failing step's result. On success the net difference is broadcast as normal granular events.
+
+Rules:
+- Duplicate definitions within `Consume` are summed before removal.
+- Empty `Consume` (pure production) or empty `Produce` (pure consumption) is allowed; **both** empty, or any entry with a null definition or quantity ≤ 0, returns `InvalidRequest` and does no work.
+
+```cpp
+// 2×Scrap + 1×Cloth  ->  1×Bandage
+TArray<FInventoryExchangeItem> In  { {Scrap, 2}, {Cloth, 1} };
+TArray<FInventoryExchangeItem> Out { {Bandage, 1} };
+if (Inventory->ExecuteExchange(In, Out).Succeeded()) { /* crafted */ }
+```
 
 ### `FInventoryOpResult`
 

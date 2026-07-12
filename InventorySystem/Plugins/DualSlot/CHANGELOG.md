@@ -3,6 +3,18 @@
 All notable changes to the DualSlot plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `UInventoryComponent::ExecuteExchange(Consume[], Produce[])` — atomic multi-item
+  exchange for crafting. Removes all inputs first (so outputs can reuse freed space,
+  enabling in-place swaps in a full inventory) then adds all outputs; on any failure
+  the inventory is restored exactly and no entry events fire (only `OnOperationRejected`).
+  New `FInventoryExchangeItem` `{ Definition, Quantity }` struct describes each line item.
+- Automation tests covering successful craft, input aggregation, rollback on insufficient
+  ingredients, rollback on no output space, the single-slot swap case, invalid requests,
+  and state-identity after rollback.
+
 ## [1.0.0] — Initial release
 
 ### Added

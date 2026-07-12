@@ -19,6 +19,22 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntryRemoved, const FInventoryEnt
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnOperationRejected, const FInventoryOpResult&, Result);
 
 /**
+ * One line item in an atomic exchange (crafting): a definition and how many of it.
+ * Used for both the consumed inputs and the produced outputs of ExecuteExchange.
+ */
+USTRUCT(BlueprintType)
+struct DUALSLOTCORE_API FInventoryExchangeItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	TObjectPtr<UInventoryItemDefinition> Definition = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory", meta = (ClampMin = 1))
+	int32 Quantity = 1;
+};
+
+/**
  * Drop-in inventory for any Actor. Layout mode (List or Grid) comes from the
  * assigned UInventoryConfig asset - switchable at design time, no recompile.
  */
@@ -60,6 +76,13 @@ public:
 	/** Removes up to Quantity of the item across its stacks. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	FInventoryOpResult RemoveItem(UInventoryItemDefinition* Definition, int32 Quantity = 1);
+
+	/** Atomically consumes all Consume items then produces all Produce items.
+	 *  Removals run first so outputs may occupy space freed by inputs.
+	 *  On ANY failure the inventory is restored exactly and zero item events fire
+	 *  (only OnOperationRejected, with the failing operation's result). */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	FInventoryOpResult ExecuteExchange(const TArray<FInventoryExchangeItem>& Consume, const TArray<FInventoryExchangeItem>& Produce);
 
 	/** Moves an entry to a linear slot (List mode only). Swaps with any occupant. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")

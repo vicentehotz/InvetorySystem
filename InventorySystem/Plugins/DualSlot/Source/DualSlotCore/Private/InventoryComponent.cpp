@@ -115,6 +115,93 @@ FInventoryOpResult UInventoryComponent::RemoveItem(UInventoryItemDefinition* Def
 	return ApplyMutation([&]() { return GetPolicy()->Remove(InventoryList, Definition, Quantity); });
 }
 
+FInventoryOpResult UInventoryComponent::ExecuteExchange(const TArray<FInventoryExchangeItem>& Consume, const TArray<FInventoryExchangeItem>& Produce)
+{
+	// Validate up front so no work (and no mutation/events) happens on a malformed request.
+	if (Consume.Num() == 0 && Produce.Num() == 0)
+	{
+		const FInventoryOpResult Result = FInventoryOpResult::Fail(EInventoryOpStatus::InvalidRequest);
+		OnOperationRejected.Broadcast(Result);
+		return Result;
+	}
+	for (const FInventoryExchangeItem& Item : Consume)
+	{
+		if (!Item.Definition || Item.Quantity <= 0)
+		{
+			const FInventoryOpResult Result = FInventoryOpResult::Fail(EInventoryOpStatus::InvalidRequest);
+			OnOperationRejected.Broadcast(Result);
+			return Result;
+		}
+	}
+	for (const FInventoryExchangeItem& Item : Produce)
+	{
+		if (!Item.Definition || Item.Quantity <= 0)
+		{
+			const FInventoryOpResult Result = FInventoryOpResult::Fail(EInventoryOpStatus::InvalidRequest);
+			OnOperationRejected.Broadcast(Result);
+			return Result;
+		}
+	}
+
+	// Aggregate duplicate Consume definitions so partial-drain ordering can't double-remove.
+	TArray<FInventoryExchangeItem> AggregatedConsume;
+	for (const FInventoryExchangeItem& Item : Consume)
+	{
+		FInventoryExchangeItem* Existing = AggregatedConsume.FindByPredicate(
+			[&Item](const FInventoryExchangeItem& E) { return E.Definition == Item.Definition; });
+		if (Existing)
+		{
+			Existing->Quantity += Item.Quantity;
+		}
+		else
+		{
+			AggregatedConsume.Add(Item);
+		}
+	}
+
+	return ApplyMutation([&]() -> FInventoryOpResult
+	{
+		// Snapshot for exact rollback. NextEntryId must be restored too so a rolled-back
+		// production doesn't burn ids and produce a "changed" phantom on a later op.
+		const TArray<FInventoryEntry> BackupEntries = InventoryList.Entries;
+		const int32 BackupNextEntryId = NextEntryId;
+
+		auto Rollback = [&]()
+		{
+			InventoryList.Entries = BackupEntries;
+			NextEntryId = BackupNextEntryId;
+			// FastArray internal ReplicationID/Map state may reference now-removed items;
+			// MarkArrayDirty() is the documented-safe blunt reset after a raw restore.
+			InventoryList.MarkArrayDirty();
+		};
+
+		// Removes first, so outputs can occupy space freed by inputs (the swap case).
+		for (const FInventoryExchangeItem& Item : AggregatedConsume)
+		{
+			const FInventoryOpResult Result = GetPolicy()->Remove(InventoryList, Item.Definition, Item.Quantity);
+			if (Result.Status != EInventoryOpStatus::Success) // Partial counts as failure: all-or-nothing.
+			{
+				Rollback();
+				return Result;
+			}
+		}
+
+		// Then produce all outputs.
+		for (const FInventoryExchangeItem& Item : Produce)
+		{
+			const FInventoryOpResult Result = GetPolicy()->Add(InventoryList, Item.Definition, Item.Quantity, NextEntryId);
+			if (Result.Status != EInventoryOpStatus::Success)
+			{
+				Rollback();
+				return Result;
+			}
+		}
+
+		// Success: policies already mark items/array dirty per-op, no extra dirtying needed.
+		return FInventoryOpResult::Ok();
+	});
+}
+
 FInventoryOpResult UInventoryComponent::MoveEntryToSlot(int32 EntryId, int32 TargetSlot)
 {
 	return ApplyMutation([&]() { return GetPolicy()->MoveToSlot(InventoryList, EntryId, TargetSlot); });
